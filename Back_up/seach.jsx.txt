@@ -1,0 +1,309 @@
+import React, { useState, useEffect } from "react";
+import {
+  Container,
+  CssBaseline,
+  Typography,
+  Box,
+  TextField,
+  InputAdornment,
+  Grid,
+} from "@mui/material";
+//import { makeStyles } from '@mui/material';
+import { BoxHomePage } from "../Style";
+
+import { flightsearch, flightsearchv2 } from "./api/FightApi";
+import Autocomplete, { createFilterOptions } from "@mui/material/Autocomplete";
+import CircularProgress from "@mui/material/CircularProgress";
+import { LocationOn as PinIcon, Search as MagnifierIcon,} from "@mui/icons-material";
+import DestinationCity from "./DestinationCity";
+
+// Setting the delay function
+function sleep(delay = 0) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, delay);
+  });
+}
+
+// Top 5 Nigerian songs on Apple Music
+const top5Songs = [
+  { title: 'Organise'},
+  { title: 'Joha'},
+  { title: 'Terminator'},
+  { title: 'Dull'},
+  { title: 'Nzaza'},
+];
+
+
+const Search = () => {
+  const [cityCode, setCityCode] = useState(null);
+  const [inputValue, setInputValue] = useState("");
+  const [options, setOptions] = useState([]);
+
+  const [open2, setOpen2] = useState(false);
+  const [options2, setOptions2] = useState([]);
+  var loadingInit = open2 && options2.length === 0;
+  const [loading, setIsLoading] = useState(loadingInit);
+  const [inputCityName, setInputCityName] = useState("");
+  const [cityCode2, setCityCode2] = useState("");
+
+   // Setting the logic for the asynchronous function on page reload
+   React.useEffect(() => {
+    let active = true;
+
+    // if (!loading) {
+    //   return undefined;
+    // }
+
+    (async () => {
+      (open2 && inputCityName?.length > 0)? setIsLoading(true): setIsLoading(false);
+      //await sleep(1e3); // For demo purposes.
+
+      if (active && inputCityName.length >=3 ) {
+        
+        //setOptions2([...top5Songs]);
+        const response = await flightsearchv2(inputCityName);
+        //setOptions(response?.data?.data);
+
+        var res = response?.data?.data?.map(({ address }) => {
+          return {
+            city: address.cityName,
+            code: address.cityCode,
+            country: address.countryName,
+            state: address.stateCode,
+          };
+        });
+        console.log("res is :" + JSON.stringify(res));   
+          if(res?.length > 0){
+          setOptions2(res);
+          setIsLoading(false);
+          }        
+      }
+
+    })();
+
+    return () => {
+      active = false;      
+    };
+  }, [inputCityName]);
+
+  React.useEffect(() => {
+    if (!open2) {
+      setOptions2([]);
+    }
+  }, [open2]);
+
+  // useEffect(() => {
+  //   const { process, cancel } = flightsearch(inputValue);
+
+  //   process((options) => {
+  //     console.log(JSON.stringify(options));
+  //     setOptions(options);
+  //   });
+
+  //   return () => cancel();
+  // }, [inputValue]);
+
+ 
+  // useEffect(() => {
+  //   let isMounted = true;
+  //   const controller = new AbortController();
+
+  //   const getCityName = async () => {
+  //     //setIsLoading(true);
+  //     //setErrMsg('');
+  //     try {
+  //       const response = await flightsearchv2(inputValue);
+  //       //setOptions(response?.data?.data);
+
+  //       var res = response?.data?.data?.map(({ address }) => {
+  //         return {
+  //           city: address.cityName,
+  //           code: address.cityCode,
+  //           country: address.countryName,
+  //           state: address.stateCode,
+  //         };
+  //       });
+  //       console.log("res is :" + JSON.stringify(res));   
+  //       if (res.length > 0) {
+  //         setOptions(res);
+  //       }
+  //     } catch (err) {
+  //       console.log("Failed to get city name, check api: " + err);
+  //     } finally {
+  //       //setIsLoading(false);
+  //     }
+  //   };
+  //   getCityName();
+  //   return () => {
+  //     isMounted = false;
+  //     controller.abort();
+  //   };
+  // }, [inputValue]);
+
+
+
+
+  return (
+    <Container component="main" maxWidth="md">
+      <pre>{JSON.stringify(options)}</pre>
+      <pre>{JSON.stringify(options2)}</pre>
+      <pre>City code: {JSON.stringify(cityCode2)}</pre>
+      <Box mt={2}>
+        <Autocomplete
+          size="small"
+          id="selectCityInput"
+          autoComplete
+          freeSolo
+          disableClearable
+          blurOnSelect
+          clearOnBlur
+          autoHighlight
+          options={options}
+          onChange={(event, newValue) => {
+            setCityCode(newValue.code);
+          }}
+          onInputChange={(event, newInputValue) => {
+            setInputValue(newInputValue);
+          }}
+          sx={{ width: { md: 300 } }}
+          getOptionLabel={(option) => option.city || ""}
+          renderOption={(option) => {
+            return (
+              <Grid container alignItems="center">
+                <Grid item>
+                  <PinIcon color="secondary" sx={{ mr: 2 }} />
+                </Grid>
+                <Grid item xs>
+                  <span style={{ fontWeight: 400 }}>{option.city}</span>
+                  <Typography variant="body2" color="textSecondary">
+                    {option.country}
+                    {option.state ? `, ${option.state}` : ""}
+                  </Typography>
+                </Grid>
+              </Grid>
+            );
+          }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              placeholder="From city/airport"
+              label="Choose a city"
+              //variant="outlined"
+              InputProps={{
+                ...params.inputProps,
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <MagnifierIcon sx={{ marginLeft: 0 }} />
+                  </InputAdornment>
+                ),
+                //autoComplete: "new-password", // disable autocomplete and autofill
+              }}
+            />
+          )}
+        />
+
+        <div style={{ margin: 10 }}>
+          <Autocomplete
+            size="small"
+            id="selectCityInputv2"
+            autoComplete
+            freeSolo
+            disableClearable
+            blurOnSelect
+            clearOnBlur
+            autoHighlight
+            sx={{ width: 300 }}
+            open={open2}
+            onOpen={() => {
+              setOpen2(true);
+            }}
+            onClose={() => {
+              setOpen2(false);
+            }}
+            onChange={(event, newValue) => {
+              setCityCode2(newValue.code);
+            }}
+            onInputChange={(event, newInputValue) => {
+              setInputCityName(newInputValue);
+            }}
+            isOptionEqualToValue={(option, value) =>
+              value === undefined ||
+              option?.id?.toString() === (value?.id ?? value)?.toString()
+            }
+            options={options2}
+            loading={loading}
+            getOptionLabel={(option) => option.city}
+            renderOption={(props, option) => {
+              return (
+                <Grid
+                  container
+                  alignItems="center"
+                  {...props}
+                  key={option.code}
+                >
+                  <Grid item>
+                    <PinIcon color="secondary" sx={{ mr: 2 }} />
+                  </Grid>
+                  <Grid item xs>
+                    <span style={{ fontWeight: 400 }}>{option?.city}</span>
+                    <Typography variant="body2" color="textSecondary">
+                      {option?.country}
+                      {option?.state ? `, ${option?.state}` : ""}
+                    </Typography>
+                  </Grid>
+                </Grid>
+              );
+            }}
+            // renderOption={(props, option) => (
+            //   <Box
+            //     component="li"
+            //     sx={{ "& > img": { mr: 2, flexShrink: 0 } }}
+            //     {...props}
+            //   >
+            //     <img
+            //       loading="lazy"
+            //       width="20"
+            //       src={`https://flagcdn.com/w20/${option.code.toLowerCase()}.png`}
+            //       srcSet={`https://flagcdn.com/w40/${option.code.toLowerCase()}.png 2x`}
+            //       alt=""
+            //     />
+            //     {option.city} ({option.country}) +{option.code}
+            //   </Box>
+            // )}
+
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                placeholder="From city/airport"
+                label="Choose a city"
+                InputProps={{
+                  ...params.InputProps,
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <MagnifierIcon sx={{ marginLeft: 0 }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <React.Fragment>
+                      {loading ? (
+                        <CircularProgress color="inherit" size={20} />
+                      ) : null}
+                      {params.InputProps.endAdornment}
+                    </React.Fragment>
+                  ),
+                }}
+              />
+            )}
+          />
+        </div>
+        <div>
+          <Box margin={2}>
+            <DestinationCity />
+          </Box>
+        </div>
+      </Box>
+    </Container>
+  );
+};
+
+export default Search;
